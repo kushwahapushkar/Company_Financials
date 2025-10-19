@@ -1,0 +1,57 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+sns.set(style='whitegrid', palette='viridis')
+plt.rcParams.update({'figure.figsize': (8,5), 'axes.titlesize': 14, 'axes.labelsize': 12})
+
+numeric_cols = [
+    'Units_Sold', 'Manufacturing_Price', 'Sale_Price',
+    'Gross_Sales', 'Discounts', 'Sales', 'COGS', 'Profit'
+]
+
+
+#Plot 1: Corelation between fianancial metrics
+plt.figure(figsize=(10,6))
+sns.heatmap(df[numeric_cols].corr(), annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
+plt.title("Correlation between Financial Metrics")
+plt.show()
+
+#Plot 2: Pairwise relationships among financial metrics
+sns.pairplot(df[numeric_cols], diag_kind='kde', corner=True)
+plt.suptitle("Pairwise Relationships among Financial Metrics", y=1.02)
+plt.show()
+
+#Plot 3: Realation of Profit with other financial metrics
+targets = ['Units_Sold', 'Manufacturing_Price', 'Sale_Price', 
+           'Gross_Sales', 'Discounts', 'Sales', 'COGS']
+
+for col in targets:
+    if col in df.columns:
+        plt.figure(figsize=(7,5))
+        sns.regplot(data=df, x=col, y='Profit', scatter_kws={'alpha':0.6})
+        plt.title(f"Profit vs {col}")
+        plt.xlabel(col.replace('_', ' '))
+        plt.ylabel("Profit")
+        plt.tight_layout()
+        plt.show()
+
+#Plot 4: Distribution of Profit% Margin
+if 'Sales' in df.columns and 'Profit' in df.columns:
+    df['Profit_Margin_%'] = (df['Profit'] / df['Sales']) * 100
+    plt.figure(figsize=(8,5))
+    sns.histplot(df['Profit_Margin_%'], bins=25, kde=True)
+    plt.title("Distribution of Profit Margin (%)")
+    plt.xlabel("Profit Margin (%)")
+    plt.ylabel("Frequency")
+    plt.show()
+
+#Plot 5: Impact of Discount on Profit (Segment-wise)
+plt.figure(figsize=(8,5))
+sns.scatterplot(data=df, x='Discounts', y='Profit', hue='Segment', alpha=0.8)
+plt.title("Impact of Discounts on Profit (Segment-wise)")
+plt.xlabel("Discounts")
+plt.ylabel("Profit")
+plt.legend(title='Segment')
+plt.show()
