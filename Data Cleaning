@@ -1,0 +1,82 @@
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv("/content/Financials.csv") 
+
+# Clean column names 
+df.columns = df.columns.str.strip().str.replace(' ', '_')
+
+print("Cleaned Columns:")
+print(df.columns.tolist())
+
+def clean_currency(s):
+    """
+    Cleans and converts currency-like strings to numeric.
+    Handles $, commas, parentheses (negative values), and blanks.
+    """
+    s = s.fillna('').astype(str).str.strip()
+
+    # Detect numbers wrapped in parentheses, and spaces
+    neg_mask = s.str.contains(r'\(.*\)', regex=True)
+
+    # Remove $, commas, and parentheses
+    s = s.str.replace(r'[\$,()]', '', regex=True)
+
+    # Convert to numeric (invalid values become NaN)
+    s = pd.to_numeric(s.replace('', np.nan), errors='coerce')
+
+    # Apply negative sign to rows originally having parentheses
+    s.loc[neg_mask] = -abs(s.loc[neg_mask])
+
+    return s
+
+numeric_cols = [
+    'Units_Sold', 'Manufacturing_Price', 'Sale_Price',
+    'Gross_Sales', 'Discounts', 'Sales', 'COGS', 'Profit'
+]
+
+for col in numeric_cols:
+    if col in df.columns:
+        df[col] = clean_currency(df[col])
+
+print("\n Numeric columns cleaned successfully!")
+
+
+
+if 'Date' in df.columns:
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+
+if 'Month_Number' in df.columns and 'Year' in df.columns:
+    df['Year_Month'] = (
+        df['Year'].astype(str) + '-' +
+        df['Month_Number'].astype(str).str.zfill(2)
+    )
+
+
+
+print("\n Data types after cleaning:")
+print(df.dtypes)
+
+print("\n Summary stats for numeric columns:")
+print(df[numeric_cols].describe().T)
+
+
+
+negatives = (df[numeric_cols] < 0).sum()
+print("\n Negative value counts per column:")
+print(negatives)
+
+# Show actual negative-profit records
+negative_profits = df[df['Profit'] < 0]
+print("\n Negative profit transactions found:")
+print(negative_profits[['Country', 'Product', 'Profit']].head())
+
+
+df['Profit_Margin_%'] = (df['Profit'] / df['Sales']) * 100
+
+
+df.to_csv("/content/Financials_Cleaned_new.csv", index=False)
+print("\n Clean dataset saved as: Financials_Cleaned.csv")
+
+
+
